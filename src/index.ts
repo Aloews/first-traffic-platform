@@ -6,7 +6,13 @@ import authRoutes from './api/auth/routes.js';
 import campaignRoutes from './api/campaigns/routes.js';
 import rtbRoutes from './api/rtb/routes.js';
 import analyticsRoutes from './api/analytics/routes.js';
+import hilltopRoutes from './api/hilltop/routes.js';
+import { startOptimizationScheduler } from './services/optimizer.js';
 
+app.use('/api/hilltop', hilltopRoutes);
+
+// Запускаем оптимизатор каждый час
+startOptimizationScheduler(60);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
