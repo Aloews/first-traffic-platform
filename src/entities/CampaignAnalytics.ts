@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -5,29 +6,29 @@ import {
   ManyToOne,
   CreateDateColumn,
 } from 'typeorm';
-import { Campaign } from './Campaign.js';
+import { Campaign } from './Campaign';
 
 @Entity('campaign_analytics')
 export class CampaignAnalytics {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('text')
   campaignId: string;
 
   @ManyToOne(() => Campaign, (campaign) => campaign.analytics, { onDelete: 'CASCADE' })
   campaign: Campaign;
 
-  @Column({ type: 'date' })
+  @Column('date')
   date: Date;
 
-  @Column({ default: 0 })
+  @Column('int', { default: 0 })
   impressions: number;
 
-  @Column({ default: 0 })
+  @Column('int', { default: 0 })
   clicks: number;
 
-  @Column({ default: 0 })
+  @Column('int', { default: 0 })
   conversions: number;
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
