@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { User } from '../entities/User';
-import { Campaign } from '../entities/Campaign';
-import { RTBAuction } from '../entities/RTBAuction';
-import { CampaignAnalytics } from '../entities/CampaignAnalytics';
+import { User } from '../entities/User.js';
+import { Campaign } from '../entities/Campaign.js';
+import { RTBAuction } from '../entities/RTBAuction.js';
+import { CampaignAnalytics } from '../entities/CampaignAnalytics.js';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',

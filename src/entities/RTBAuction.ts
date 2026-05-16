@@ -1,0 +1,38 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+} from 'typeorm';
+import { Campaign } from './Campaign.js';
+
+@Entity('rtb_auctions')
+export class RTBAuction {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  campaignId: string;
+
+  @ManyToOne(() => Campaign, (campaign) => campaign.auctions, { onDelete: 'CASCADE' })
+  campaign: Campaign;
+
+  @Column('decimal', { precision: 10, scale: 4 })
+  bidPrice: number;
+
+  @Column('decimal', { precision: 10, scale: 4, nullable: true })
+  clearingPrice: number;
+
+  @Column({ default: false })
+  won: boolean;
+
+  @Column('jsonb', { default: {} })
+  bidRequest: Record<string, any>;
+
+  @Column('jsonb', { default: {} })
+  bidResponse: Record<string, any>;
+
+  @CreateDateColumn()
+  createdAt: Date;
+}

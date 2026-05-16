@@ -7,9 +7,9 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from './User';
-import { RTBAuction } from './RTBAuction';
-import { CampaignAnalytics } from './CampaignAnalytics';
+import { User } from './User.js';
+import { RTBAuction } from './RTBAuction.js';
+import { CampaignAnalytics } from './CampaignAnalytics.js';
 
 @Entity('campaigns')
 export class Campaign {
