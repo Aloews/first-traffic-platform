@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,19 +8,19 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from './User.js';
-import { RTBAuction } from './RTBAuction.js';
-import { CampaignAnalytics } from './CampaignAnalytics.js';
+import { User } from './User';
+import { RTBAuction } from './RTBAuction';
+import { CampaignAnalytics } from './CampaignAnalytics';
 
 @Entity('campaigns')
 export class Campaign {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column('text')
   name: string;
 
-  @Column({ nullable: true })
+  @Column('text', { nullable: true })
   description: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
@@ -38,7 +39,7 @@ export class Campaign {
   @Column('jsonb', { default: {} })
   targeting: Record<string, any>;
 
-  @Column('jsonb', { default: {} })
+  @Column('jsonb', { default: [] })
   trafficSources: Record<string, any>[];
 
   @Column({
@@ -48,13 +49,13 @@ export class Campaign {
   })
   status: string;
 
-  @Column({ nullable: true })
+  @Column('timestamp', { nullable: true })
   launchedAt: Date;
 
   @ManyToOne(() => User, (user) => user.campaigns, { onDelete: 'CASCADE' })
   user: User;
 
-  @Column()
+  @Column('text')
   userId: string;
 
   @OneToMany(() => RTBAuction, (auction) => auction.campaign)
