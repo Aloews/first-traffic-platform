@@ -12,8 +12,8 @@ export class RTBAuction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  campaignId: string;
+  @Column('text')
+campaignId: string;
 
   @ManyToOne(() => Campaign, (campaign) => campaign.auctions, { onDelete: 'CASCADE' })
   campaign: Campaign;
