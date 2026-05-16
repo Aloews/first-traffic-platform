@@ -1,8 +1,5 @@
 import { Router, Request, Response } from 'express';
 
-cat /home/claude/hilltop-files/src/api/hilltop/routes.ts
-Output
-
 import { Router, Request, Response } from 'express';
 import { AppDataSource } from '../../config/database.js';
 import { Campaign } from '../../entities/Campaign.js';
