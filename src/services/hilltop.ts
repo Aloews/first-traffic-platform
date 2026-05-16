@@ -1,26 +1,64 @@
 import axios from 'axios';
+import { AppDataSource } from '../config/database.js';
+import { UserIntegration } from '../entities/UserIntegration.js';
 
 const HILLTOP_API = 'https://api.hilltopads.com/v1';
-const API_KEY = process.env.HILLTOP_API_KEY || '';
 
-const http = axios.create({
-  baseURL: HILLTOP_API,
-  timeout: 10000,
-});
+// ─── Get API key for user ─────────────────────────────────────────────────────
+
+export async function getHilltopKey(userId: string): Promise<string> {
+  const repo = AppDataSource.getRepository(UserIntegration);
+  const integration = await repo.findOne({
+    where: { userId, provider: 'hilltopads', isActive: true },
+  });
+
+  if (!integration?.apiKey) {
+    throw new Error('HilltopAds API key not configured. Please add it in Settings → Integrations.');
+  }
+
+  return integration.apiKey;
+}
+
+function api(apiKey: string) {
+  return axios.create({
+    baseURL: HILLTOP_API,
+    timeout: 10000,
+    params: { key: apiKey },
+  });
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+export type AdFormat =
+  | 'Banner'
+  | 'Popunder mobile'
+  | 'Popunder desktop'
+  | 'In-Page Push'
+  | 'Video Slider'
+  | 'Interstitial';
 
 export interface HilltopCampaignCreate {
   name: string;
   url: string;
-  rate: number;                  // CPM in USD
+  format: AdFormat;
+  rate: number;
   totalBudget?: number;
   dailyBudget?: number;
-  geo?: string[];                // ['US', 'GB', 'DE']
-  browser?: string[];            // ['Chrome', 'Safari']
-  device?: string[];             // ['Desktop', 'Mobile/smartphone']
+  geo?: string[];
+  browser?: string[];
+  device?: string[];
   os?: string[];
   active?: boolean;
+  // Banner specific
+  bannerSizes?: string[];
+  // Push specific
+  pushTitle?: string;
+  pushText?: string;
+  pushIconUrl?: string;
+  pushImageUrl?: string;
+  // Frequency cap
+  capTotal?: number;
+  capResetAfter?: number;
 }
 
 export interface HilltopCampaign {
@@ -44,34 +82,45 @@ export interface HilltopStats {
   cpm: number;
 }
 
+// ─── Format helpers ───────────────────────────────────────────────────────────
+
+function getChannelsForFormat(format: AdFormat): string[] {
+  switch (format) {
+    case 'Popunder mobile':
+    case 'Popunder desktop':
+      return ['Mainstream High Activity', 'Mainstream Medium Activity'];
+    case 'In-Page Push':
+      return ['Mainstream High Activity', 'Mainstream Medium Activity', 'Mainstream Low Activity'];
+    default:
+      return ['Mainstream High Activity', 'Mainstream Medium Activity'];
+  }
+}
+
 // ─── Campaign Management ──────────────────────────────────────────────────────
 
-export async function createHilltopCampaign(data: HilltopCampaignCreate): Promise<HilltopCampaign> {
-  const targeting: Record<string, any> = {};
+export async function createHilltopCampaign(
+  userId: string,
+  data: HilltopCampaignCreate
+): Promise<HilltopCampaign> {
+  const apiKey = await getHilltopKey(userId);
+  const http = api(apiKey);
 
-  if (data.geo?.length) {
-    targeting.geo = { operator: 'in', operand: data.geo };
-  }
-  if (data.browser?.length) {
-    targeting.browser = { operator: 'in', operand: data.browser };
-  }
-  if (data.device?.length) {
-    targeting.device = { operator: 'in', operand: data.device };
-  }
-  if (data.os?.length) {
-    targeting.os = { operator: 'in', operand: data.os };
-  }
+  const targeting: Record<string, any> = {};
+  if (data.geo?.length) targeting.geo = { operator: 'in', operand: data.geo };
+  if (data.browser?.length) targeting.browser = { operator: 'in', operand: data.browser };
+  if (data.device?.length) targeting.device = { operator: 'in', operand: data.device };
+  if (data.os?.length) targeting.os = { operator: 'in', operand: data.os };
 
   const payload: Record<string, any> = {
-    format: 'Banner',
-    channels: ['Mainstream High Activity', 'Mainstream Medium Activity'],
+    format: data.format,
+    channels: getChannelsForFormat(data.format),
     type: 'CPM',
     rate: data.rate,
     name: data.name,
     url: encodeURIComponent(data.url),
     active: data.active ?? false,
-    capTotal: 3,
-    capResetAfter: 24,
+    capTotal: data.capTotal ?? 3,
+    capResetAfter: data.capResetAfter ?? 24,
     capForCampaign: 'campaign',
     filters: { Proxy: 'Disallow' },
   };
@@ -80,44 +129,55 @@ export async function createHilltopCampaign(data: HilltopCampaignCreate): Promis
   if (data.dailyBudget) payload.limitBudgetDaily = String(Math.max(20, data.dailyBudget));
   if (Object.keys(targeting).length) payload.targeting = targeting;
 
-  const res = await http.post(`/advertiser/campaign?key=${API_KEY}`, payload);
+  // Push-specific creative
+  if (data.format === 'In-Page Push') {
+    payload.creative = {
+      title: data.pushTitle || data.name,
+      text: data.pushText || '',
+      iconUrl: data.pushIconUrl || '',
+      imageUrl: data.pushImageUrl || '',
+    };
+  }
+
+  const res = await http.post('/advertiser/campaign', payload);
   return res.data;
 }
 
-export async function getHilltopCampaign(hilltopId: number): Promise<HilltopCampaign> {
-  const res = await http.get(`/advertiser/campaign/${hilltopId}?key=${API_KEY}`);
+export async function getHilltopCampaign(userId: string, hilltopId: number): Promise<HilltopCampaign> {
+  const apiKey = await getHilltopKey(userId);
+  const res = await api(apiKey).get(`/advertiser/campaign/${hilltopId}`);
   return res.data;
 }
 
-export async function listHilltopCampaigns(): Promise<HilltopCampaign[]> {
-  const res = await http.get(`/advertiser/campaigns?key=${API_KEY}`);
+export async function listHilltopCampaigns(userId: string): Promise<HilltopCampaign[]> {
+  const apiKey = await getHilltopKey(userId);
+  const res = await api(apiKey).get('/advertiser/campaigns');
   return res.data?.campaigns || [];
 }
 
-export async function updateHilltopBid(hilltopId: number, rate: number): Promise<void> {
-  await http.patch(`/advertiser/campaign/${hilltopId}?key=${API_KEY}`, { rate });
+export async function updateHilltopBid(userId: string, hilltopId: number, rate: number): Promise<void> {
+  const apiKey = await getHilltopKey(userId);
+  await api(apiKey).patch(`/advertiser/campaign/${hilltopId}`, { rate });
 }
 
-export async function pauseHilltopCampaign(hilltopId: number): Promise<void> {
-  await http.post(`/advertiser/campaign/${hilltopId}/stop?key=${API_KEY}`);
+export async function pauseHilltopCampaign(userId: string, hilltopId: number): Promise<void> {
+  const apiKey = await getHilltopKey(userId);
+  await api(apiKey).post(`/advertiser/campaign/${hilltopId}/stop`);
 }
 
-export async function activateHilltopCampaign(hilltopId: number): Promise<void> {
-  await http.post(`/advertiser/campaign/${hilltopId}/activate?key=${API_KEY}`);
+export async function activateHilltopCampaign(userId: string, hilltopId: number): Promise<void> {
+  const apiKey = await getHilltopKey(userId);
+  await api(apiKey).post(`/advertiser/campaign/${hilltopId}/activate`);
 }
-
-export async function archiveHilltopCampaign(hilltopId: number): Promise<void> {
-  await http.post(`/advertiser/campaign/${hilltopId}/archive?key=${API_KEY}`);
-}
-
-// ─── Statistics ───────────────────────────────────────────────────────────────
 
 export async function getHilltopStats(
+  userId: string,
   hilltopId: number,
   dateFrom: string,
   dateTo: string
 ): Promise<HilltopStats> {
-  const res = await http.get(`/advertiser/campaign/${hilltopId}/stats?key=${API_KEY}`, {
+  const apiKey = await getHilltopKey(userId);
+  const res = await api(apiKey).get(`/advertiser/campaign/${hilltopId}/stats`, {
     params: { dateFrom, dateTo },
   });
 
@@ -133,11 +193,13 @@ export async function getHilltopStats(
 }
 
 export async function getHilltopStatsByZone(
+  userId: string,
   hilltopId: number,
   dateFrom: string,
   dateTo: string
 ): Promise<any[]> {
-  const res = await http.get(`/advertiser/campaign/${hilltopId}/stats/zones?key=${API_KEY}`, {
+  const apiKey = await getHilltopKey(userId);
+  const res = await api(apiKey).get(`/advertiser/campaign/${hilltopId}/stats/zones`, {
     params: { dateFrom, dateTo },
   });
   return res.data?.zones || [];
