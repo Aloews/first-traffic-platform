@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcryptjs from 'bcryptjs';
-import { AppDataSource } from '../../config/database';
-import { User } from '../../entities/User';
+import { AppDataSource } from '../../config/database.js';
+import { User } from '../../entities/User.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();

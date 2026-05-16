@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { AppDataSource } from './config/database';
-import authRoutes from './api/auth/routes';
-import campaignRoutes from './api/campaigns/routes';
-import rtbRoutes from './api/rtb/routes';
-import analyticsRoutes from './api/analytics/routes';
+import { AppDataSource } from './config/database.js';
+import authRoutes from './api/auth/routes.js';
+import campaignRoutes from './api/campaigns/routes.js';
+import rtbRoutes from './api/rtb/routes.js';
+import analyticsRoutes from './api/analytics/routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;

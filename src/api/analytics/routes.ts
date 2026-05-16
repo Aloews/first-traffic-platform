@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { AppDataSource } from '@/config/database';
-import { Campaign } from '@/entities/Campaign';
-import { CampaignAnalytics } from '@/entities/CampaignAnalytics';
-import { authMiddleware } from '@/middleware/auth';
+import { AppDataSource } from '../../config/database.js';
+import { Campaign } from '../../entities/Campaign.js';
+import { CampaignAnalytics } from '../../entities/CampaignAnalytics.js';
+import { authMiddleware } from '../../middleware/auth.js';
 
 const router = Router();
 router.use(authMiddleware);
