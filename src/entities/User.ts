@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,23 +7,23 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Campaign } from './Campaign.js';
+import { Campaign } from './Campaign';
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column('text', { unique: true })
   email: string;
 
-  @Column()
+  @Column('text')
   password: string;
 
-  @Column()
+  @Column('text')
   fullName: string;
 
-  @Column({ unique: true })
+  @Column('text', { nullable: true })
   apiKey: string;
 
   @OneToMany(() => Campaign, (campaign) => campaign.user)
