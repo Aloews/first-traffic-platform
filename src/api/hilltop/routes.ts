@@ -1,6 +1,4 @@
 import { Router, Request, Response } from 'express';
-
-import { Router, Request, Response } from 'express';
 import { AppDataSource } from '../../config/database.js';
 import { Campaign } from '../../entities/Campaign.js';
 import { CampaignAnalytics } from '../../entities/CampaignAnalytics.js';
@@ -329,4 +327,3 @@ router.get('/postback', async (req: Request, res: Response) => {
 });
 
 export default router;
-Done
