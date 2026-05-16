@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -5,7 +6,7 @@ import {
   ManyToOne,
   CreateDateColumn,
 } from 'typeorm';
-import { Campaign } from './Campaign.js';
+import { Campaign } from './Campaign';
 
 @Entity('rtb_auctions')
 export class RTBAuction {
@@ -13,7 +14,7 @@ export class RTBAuction {
   id: string;
 
   @Column('text')
-campaignId: string;
+  campaignId: string;
 
   @ManyToOne(() => Campaign, (campaign) => campaign.auctions, { onDelete: 'CASCADE' })
   campaign: Campaign;
@@ -24,7 +25,7 @@ campaignId: string;
   @Column('decimal', { precision: 10, scale: 4, nullable: true })
   clearingPrice: number;
 
-  @Column({ default: false })
+  @Column('boolean', { default: false })
   won: boolean;
 
   @Column('jsonb', { default: {} })
