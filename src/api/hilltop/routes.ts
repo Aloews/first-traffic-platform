@@ -1,4 +1,4 @@
-bash
+import { Router, Request, Response } from 'express';
 
 cat /home/claude/hilltop-files/src/api/hilltop/routes.ts
 Output
