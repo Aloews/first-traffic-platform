@@ -1,85 +1,67 @@
 import { Router, Request, Response } from 'express';
 import { AppDataSource } from '../../config/database.js';
-import { RTBAuction } from '../../entities/RTBAuction.js';
 import { Campaign } from '../../entities/Campaign.js';
-import { authMiddleware } from '../../middleware/auth.js';
 
 const router = Router();
-router.use(authMiddleware);
-
-const auctionRepository = AppDataSource.getRepository(RTBAuction);
 const campaignRepository = AppDataSource.getRepository(Campaign);
 
-// Get all auctions for the authenticated user's campaigns
-router.get('/auctions', async (req: Request, res: Response) => {
+// RTB bid request endpoint
+router.post('/bid', async (req: Request, res: Response) => {
   try {
-    const campaigns = await campaignRepository.find({
-      where: { userId: req.user!.id },
-    });
-    const campaignIds = campaigns.map((c) => c.id);
+    const { campaignId, floorPrice, impressionId } = req.body;
 
-    if (campaignIds.length === 0) {
-      return res.json([]);
+    if (!campaignId || floorPrice === undefined || !impressionId) {
+      return res.status(400).json({ error: 'campaignId, floorPrice, and impressionId are required' });
     }
 
-    const auctions = await auctionRepository
-      .createQueryBuilder('auction')
-      .where('auction.campaignId IN (:...campaignIds)', { campaignIds })
-      .orderBy('auction.createdAt', 'DESC')
-      .limit(100)
-      .getMany();
+    const campaign = await campaignRepository.findOne({
+      where: { id: campaignId, status: 'active' },
+    });
 
-    res.json(auctions);
+    if (!campaign) {
+      return res.status(204).send(); // No bid — campaign not found or inactive
+    }
+
+    const remainingBudget = Number(campaign.totalBudget) - Number(campaign.spent);
+    if (remainingBudget <= 0 || remainingBudget < Number(floorPrice)) {
+      return res.status(204).send(); // No bid — insufficient budget
+    }
+
+    // Simple bid response at floor price
+    res.json({
+      id: impressionId,
+      bidPrice: Number(floorPrice),
+      campaignId: campaign.id,
+    });
   } catch (error) {
-    console.error('Get auctions error:', error);
+    console.error('RTB bid error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Handle incoming bid request (OpenRTB)
-router.post('/bid', async (req: Request, res: Response) => {
+// RTB win notification
+router.post('/win', async (req: Request, res: Response) => {
   try {
-    const bidRequest = req.body;
+    const { campaignId, clearPrice } = req.body;
 
-    // Find active campaigns to bid with
-    const campaigns = await campaignRepository.find({
-      where: { status: 'active', userId: req.user!.id },
-    });
-
-    if (campaigns.length === 0) {
-      return res.status(204).send();
+    if (!campaignId || clearPrice === undefined) {
+      return res.status(400).json({ error: 'campaignId and clearPrice are required' });
     }
 
-    // Simple bid logic: use the first active campaign
-    const campaign = campaigns[0];
-    const bidPrice = 0.5; // Default bid price
-
-    const auction = auctionRepository.create({
-      campaignId: campaign.id,
-      bidPrice,
-      won: false,
-      bidRequest,
-      bidResponse: { price: bidPrice },
+    const campaign = await campaignRepository.findOne({
+      where: { id: campaignId },
     });
 
-    await auctionRepository.save(auction);
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
 
-    res.json({
-      id: bidRequest.id,
-      seatbid: [
-        {
-          bid: [
-            {
-              id: auction.id,
-              impid: bidRequest.imp?.[0]?.id || '1',
-              price: bidPrice,
-            },
-          ],
-        },
-      ],
-    });
+    campaign.spent = Number(campaign.spent) + Number(clearPrice);
+    await campaignRepository.save(campaign);
+
+    res.json({ success: true });
   } catch (error) {
-    console.error('Bid error:', error);
+    console.error('RTB win notification error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
