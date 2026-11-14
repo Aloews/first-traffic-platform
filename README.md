@@ -1,5 +1,7 @@
 # First Traffic Platform - DSP for RTB Traffic Arbitrage 🚀
 
+[Project map](./docs/MAP.md) — project architecture, agent workflow and verified setup status.
+
 Production-ready **Demand-Side Platform (DSP)** для **Real-Time Bidding (RTB)** трафик-арбитража. Автоматизируйте закупку медийной рекламы, управляйте кампаниями и оптимизируйте ROI в реальном времени.
 
 ## 🎯 Основные возможности
