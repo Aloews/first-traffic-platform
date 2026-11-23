@@ -16,5 +16,6 @@ The `.claude/` agents supplement `AGENTS.md`, `CLAUDE.md` and the repository's a
 
 Skills: `reality-first`, `release-gate`, `agent-handoff`.
 Commands: `/verify`, `/finish-task`, `/security-gate`.
+Dispatch: `/dispatch` (launches named specialist subagents when the Claude Code runtime exposes the Task tool; otherwise requires sequential work).
 
 Run `python3 scripts/validate_agent_system.py`. The CI workflow validates local metadata only; it does not prove real RTB traffic, campaign activation, conversions or revenue.
